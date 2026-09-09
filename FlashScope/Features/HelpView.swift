@@ -4,38 +4,73 @@ struct HelpView: View {
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
-        VStack(spacing: 0) {
-            HStack {
-                Label("FlashScope Help", systemImage: "lifepreserver.fill").font(.title2.weight(.semibold))
-                Spacer()
-                Button("Done") { dismiss() }.keyboardShortcut(.cancelAction)
-            }.padding(18)
-            Divider()
-            ScrollView {
-                VStack(alignment: .leading, spacing: 18) {
-                    helpSection("Start with the verdict", "Overview is intentionally plain-English: it shows the most likely cause, diagnostic confidence, four separate dimensions (media, connection, filesystem, performance), evidence coverage, and the safest next step before exposing raw technical detail.")
-                    helpSection("Quick, Standard, Deep, Capacity Integrity", "Quick is a short first pass. Standard is the normal balanced check. Deep writes more data so sustained slowdowns and instability are easier to observe. Capacity Integrity uses the largest safe sample permitted by the current free-space policy. It never overwrites occupied space, so a passing sample proves only the tested free area—not capacity that FlashScope did not touch.")
-                    helpSection("Connection-path diagnosis", "FlashScope keeps declared USB capability separate from the currently negotiated link. The Connection view visualizes the Mac → hub/adapter → negotiated link → drive path and highlights a reduced link as a connection bottleneck rather than automatically blaming flash media.")
-                    helpSection("Fix and retest", "Actionable findings include a controlled diagnostic experiment. Change one variable—such as removing a hub, freeing space, or changing ports—then rerun the same diagnostic profile. Device Timeline compares the latest result with prior runs so improvement or regression is visible.")
-                    helpSection("Cache cliff and stability", "A drive can start fast and become much slower after its write cache is exhausted. FlashScope analyzes the beginning and end of sustained write samples, reports a probable cache cliff when the drop is large, and computes a stability score from variation, deep stalls, and I/O errors.")
-                    helpSection("Workload fit", "Choose your typical workload in Settings. FlashScope interprets measured performance differently for general storage, photos/documents, large video, backups, many small files, or developer projects. These are practical guidance—not guarantees for a specific codec, application, or workload.")
-                    helpSection("Community intelligence privacy", "The optional community-baseline setting does not upload anything in this build. It only enables a privacy-minimized contribution payload you can copy from Export. The payload excludes filenames, directory listings, clear serial numbers, and user paths.")
-                    helpSection("Technician mode", "Technician mode exposes additional raw evidence, evidence coverage, local history context, and conservative PASS/REVIEW/FAIL triage. This is operational triage, not a warranty or future-reliability certification.")
-                    helpSection("Data safety", "Standard inspection is read-only. A benchmark begins only after you explicitly start it. It creates a unique app-owned directory, never overwrites an existing path, verifies file identity before deletion, rejects symlinks, and never formats, repartitions, repairs, force-unmounts, or raw-writes a disk.")
-                    helpSection("Filesystem verification", "Verification is separate from repair. FlashScope asks before a normal unmount, never force-unmounts, runs only the allowlisted macOS verification operation, records its exit status, and attempts to remount. Failure to run is reported as inconclusive rather than corruption.")
-                    helpSection("SMART and USB bridges", "Many USB flash drives and bridge controllers do not expose SMART. FlashScope reports this as unavailable and reduces diagnostic confidence; it does not treat missing SMART as a failure.")
-                    helpSection("Benchmarks and caches", "Write throughput includes durable synchronization. Standard read testing is file-level and may be influenced by macOS caches. FlashScope labels that limitation and does not claim raw-media throughput without a separately secured capability.")
-                    helpSection("Backups", "Diagnostics reduce uncertainty but cannot guarantee future reliability. Keep independent backups of important data, especially after integrity mismatches, repeated I/O errors, or filesystem problems.")
-                }.padding(20)
+        ZStack {
+            FlashScopeBackground()
+
+            VStack(spacing: 0) {
+                HStack(spacing: 13) {
+                    Image(systemName: "lifepreserver.fill")
+                        .font(.system(size: 23, weight: .semibold))
+                        .foregroundStyle(FlashScopeTheme.accent)
+                        .frame(width: 48, height: 48)
+                        .background(FlashScopeTheme.accent.opacity(0.08), in: RoundedRectangle(cornerRadius: 14))
+                        .accessibilityHidden(true)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("FlashScope Help")
+                            .font(.title2.weight(.bold))
+                        Text("Understand the verdict, evidence, and safe next steps")
+                            .font(FlashScopeTheme.supporting)
+                            .foregroundStyle(FlashScopeTheme.foregroundSecondary)
+                    }
+                    Spacer()
+                    Button("Done") { dismiss() }.keyboardShortcut(.cancelAction)
+                }
+                .padding(20)
+
+                Divider().opacity(0.18)
+
+                ScrollView {
+                    LazyVGrid(columns: [GridItem(.adaptive(minimum: 300), spacing: 14)], spacing: 14) {
+                        helpSection("Start with the verdict", icon: "waveform.path.ecg.rectangle", "Overview leads with the likely cause, confidence, media/connection/filesystem/performance dimensions, evidence coverage, and safest next step before technical detail.")
+                        helpSection("Diagnostic profiles", icon: "slider.horizontal.3", "Quick is a short first pass. Standard is balanced. Deep writes more data to expose sustained slowdowns. Capacity Integrity verifies the largest safe free-space sample without touching occupied data.")
+                        helpSection("Connection-path diagnosis", icon: "cable.connector", "FlashScope separates declared USB capability from the current negotiated link and visualizes Mac → hub/adapter → link → drive before blaming flash media.")
+                        helpSection("Fix and retest", icon: "arrow.triangle.2.circlepath", "Change one variable—such as removing a hub, freeing space, or changing ports—then rerun the same profile. Device Timeline makes improvement or regression visible.")
+                        helpSection("Cache cliff & stability", icon: "waveform.path", "FlashScope analyzes sustained samples for large burst-to-tail drops, stalls, variation, and I/O errors instead of reporting one misleading peak number.")
+                        helpSection("Workload fit", icon: "briefcase", "Choose general storage, photos/documents, large video, backup, small files, or developer projects. Suitability guidance is practical context, not a guarantee for a specific application.")
+                        helpSection("Community intelligence privacy", icon: "person.3.sequence.fill", "The optional baseline setting does not upload anything in this build. It only prepares a privacy-minimized payload that excludes filenames, clear serial numbers, directory listings, and user paths.")
+                        helpSection("Technician mode", icon: "wrench.and.screwdriver", "Technician mode exposes raw evidence, coverage, local history context, and conservative PASS/REVIEW/FAIL triage. It is not a warranty or future-reliability certification.")
+                        helpSection("Data safety", icon: "lock.shield.fill", "Inspection is read-only. Benchmarks start only after confirmation, use an app-owned temporary workspace, verify identity before cleanup, and never format, repartition, repair, force-unmount, or raw-write a disk.")
+                        helpSection("Filesystem verification", icon: "checkmark.shield", "Verification is separate from repair. FlashScope asks before a normal unmount, never force-unmounts, runs only allowlisted verification, and reports an inability to run as inconclusive rather than corruption.")
+                        helpSection("SMART & USB bridges", icon: "memorychip", "Many flash drives and bridges do not expose SMART. Missing SMART lowers evidence coverage; it is not interpreted as device failure.")
+                        helpSection("Benchmarks & caches", icon: "speedometer", "Write throughput includes durable synchronization. Standard reads are file-level and may be influenced by macOS caching, so FlashScope does not label them raw-media performance.")
+                        helpSection("Backups", icon: "externaldrive.badge.timemachine", "Diagnostics reduce uncertainty but cannot guarantee future reliability. Keep independent backups, especially after integrity mismatches, repeated I/O errors, or filesystem problems.")
+                    }
+                    .padding(20)
+                }
             }
         }
-        .frame(minWidth: 680, minHeight: 620)
+        .frame(minWidth: 700, minHeight: 640)
     }
 
-    private func helpSection(_ title: String, _ text: String) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text(title).font(.headline)
-            Text(text).foregroundStyle(.secondary).textSelection(.enabled)
+    private func helpSection(_ title: String, icon: String, _ text: String) -> some View {
+        VStack(alignment: .leading, spacing: 9) {
+            HStack(spacing: 8) {
+                Image(systemName: icon)
+                    .foregroundStyle(FlashScopeTheme.accent)
+                    .frame(width: 24, height: 24)
+                    .background(FlashScopeTheme.accent.opacity(0.07), in: RoundedRectangle(cornerRadius: 7))
+                    .accessibilityHidden(true)
+                Text(title).font(.headline)
+            }
+            Text(text)
+                .font(FlashScopeTheme.supporting)
+                .foregroundStyle(FlashScopeTheme.foregroundSecondary)
+                .textSelection(.enabled)
+                .fixedSize(horizontal: false, vertical: true)
         }
+        .padding(14)
+        .frame(maxWidth: .infinity, minHeight: 125, alignment: .topLeading)
+        .background(Color.white.opacity(0.025), in: RoundedRectangle(cornerRadius: 15))
+        .overlay { RoundedRectangle(cornerRadius: 15).stroke(Color.white.opacity(0.06), lineWidth: 1) }
     }
 }

@@ -15,15 +15,15 @@ struct FlashScopeApp: App {
     var body: some Scene {
         WindowGroup {
             ContentView(model: model)
-                .tint(.teal)
+                .tint(FlashScopeTheme.accent)
                 .preferredColorScheme(preferences.appearance.colorScheme)
-                .frame(minWidth: 900, minHeight: 620)
+                .frame(minWidth: 940, minHeight: 650)
         }
-        .defaultSize(width: 1180, height: 780)
+        .defaultSize(width: 1240, height: 820)
 
         Settings {
             SettingsView(preferences: preferences)
-                .tint(.teal)
+                .tint(FlashScopeTheme.accent)
                 .preferredColorScheme(preferences.appearance.colorScheme)
         }
     }
