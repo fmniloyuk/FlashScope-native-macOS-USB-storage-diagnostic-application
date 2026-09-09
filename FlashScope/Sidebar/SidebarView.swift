@@ -26,6 +26,7 @@ struct SidebarView: View {
             }
             .scrollContentBackground(.hidden)
             .listStyle(.sidebar)
+            .accessibilityIdentifier("sidebar-drive-list")
 
             if model.simulationMode {
                 simulationBadge
