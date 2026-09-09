@@ -13,6 +13,22 @@ final class FlashScopeUITests: XCTestCase {
 
         let exists = app.otherElements["empty-state"].waitForExistence(timeout: 3)
         XCTAssertTrue(exists)
+        XCTAssertTrue(app.buttons["empty-refresh-button"].exists)
+    }
+
+    @MainActor
+    func testAllSimulationFixturesRenderPremiumOverview() throws {
+        let app = simulatedApp()
+        app.launch()
+
+        for index in 0...9 {
+            let drive = app.descendants(matching: .any)["sidebar-drive-sim-disk-\(index)"]
+            XCTAssertTrue(drive.waitForExistence(timeout: 3), "Simulation fixture \(index) should appear in the premium sidebar")
+            drive.click()
+            XCTAssertTrue(app.otherElements["overview-card"].waitForExistence(timeout: 3), "Simulation fixture \(index) should render the verdict-first overview")
+        }
+
+        XCTAssertTrue(app.descendants(matching: .any)["simulation-mode-banner"].exists)
     }
 
     @MainActor
