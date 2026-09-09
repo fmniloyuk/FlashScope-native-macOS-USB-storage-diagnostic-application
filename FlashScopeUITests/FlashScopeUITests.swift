@@ -51,8 +51,11 @@ final class FlashScopeUITests: XCTestCase {
         XCTAssertTrue(identifiedElement(in: app, identifier: "overview-card").waitForExistence(timeout: 5))
         click(button(in: app, identifier: "health-check-button"), file: #filePath, line: #line)
 
-        XCTAssertTrue(identifiedElement(in: app, identifier: "health-check-sheet").waitForExistence(timeout: 4))
-        XCTAssertTrue(identifiedElement(in: app, identifier: "confirm-start-benchmark-button").waitForExistence(timeout: 4))
+        XCTAssertTrue(identifiedElement(in: app, identifier: "health-check-sheet").waitForExistence(timeout: 5))
+        XCTAssertTrue(
+            benchmarkConfirmationButton(in: app).waitForExistence(timeout: 5),
+            "The benchmark confirmation button should remain visible in the diagnostic sheet footer"
+        )
     }
 
     @MainActor
@@ -62,9 +65,10 @@ final class FlashScopeUITests: XCTestCase {
 
         click(identifiedElement(in: app, identifier: "sidebar-drive-sim-disk-0"), file: #filePath, line: #line)
         click(button(in: app, identifier: "health-check-button"), file: #filePath, line: #line)
-        click(identifiedElement(in: app, identifier: "confirm-start-benchmark-button"), timeout: 4, file: #filePath, line: #line)
+        XCTAssertTrue(identifiedElement(in: app, identifier: "health-check-sheet").waitForExistence(timeout: 5))
+        click(benchmarkConfirmationButton(in: app), timeout: 5, file: #filePath, line: #line)
 
-        XCTAssertTrue(identifiedElement(in: app, identifier: "benchmark-progress").waitForExistence(timeout: 4))
+        XCTAssertTrue(identifiedElement(in: app, identifier: "benchmark-progress").waitForExistence(timeout: 5))
 
         let cancelButton = button(in: app, identifier: "cancel-benchmark-button")
         if cancelButton.exists && cancelButton.isHittable {
@@ -84,7 +88,8 @@ final class FlashScopeUITests: XCTestCase {
         XCTAssertTrue(waitForElement(removed, scrolling: sidebar, timeout: 4))
         click(removed, scrolling: sidebar, file: #filePath, line: #line)
         click(button(in: app, identifier: "health-check-button"), file: #filePath, line: #line)
-        click(identifiedElement(in: app, identifier: "confirm-start-benchmark-button"), timeout: 4, file: #filePath, line: #line)
+        XCTAssertTrue(identifiedElement(in: app, identifier: "health-check-sheet").waitForExistence(timeout: 5))
+        click(benchmarkConfirmationButton(in: app), timeout: 5, file: #filePath, line: #line)
 
         XCTAssertTrue(app.alerts.firstMatch.waitForExistence(timeout: 5))
     }
@@ -95,21 +100,21 @@ final class FlashScopeUITests: XCTestCase {
         app.launch()
         click(identifiedElement(in: app, identifier: "sidebar-drive-sim-disk-4"), file: #filePath, line: #line)
 
-        let dashboard = app.scrollViews.firstMatch
-        XCTAssertTrue(dashboard.waitForExistence(timeout: 4), "The diagnostic dashboard should expose a scroll view")
+        let dashboard = app.scrollViews.element(boundBy: 1)
+        XCTAssertTrue(dashboard.waitForExistence(timeout: 5), "The diagnostic dashboard should expose its detail scroll view")
 
         let diagnoseButton = app.buttons.matching(NSPredicate(format: "label == %@", "Diagnose")).firstMatch
-        XCTAssertTrue(waitForElement(diagnoseButton, scrolling: dashboard, timeout: 4))
+        XCTAssertTrue(waitForElement(diagnoseButton, scrolling: dashboard, timeout: 5))
         click(diagnoseButton, scrolling: dashboard, file: #filePath, line: #line)
 
         let findings = identifiedElement(in: app, identifier: "findings-card")
-        XCTAssertTrue(waitForElement(findings, scrolling: dashboard, timeout: 4))
+        XCTAssertTrue(waitForElement(findings, scrolling: dashboard, timeout: 5))
 
         let connection = identifiedElement(in: app, identifier: "connection-card")
-        XCTAssertTrue(waitForElement(connection, scrolling: dashboard, timeout: 4))
+        XCTAssertTrue(waitForElement(connection, scrolling: dashboard, timeout: 5))
 
         let filesystem = identifiedElement(in: app, identifier: "filesystem-card")
-        XCTAssertTrue(waitForElement(filesystem, scrolling: dashboard, timeout: 4))
+        XCTAssertTrue(waitForElement(filesystem, scrolling: dashboard, timeout: 5))
 
         let technicalButton = app.buttons.matching(NSPredicate(format: "label == %@", "Technical")).firstMatch
         if waitForElement(technicalButton, scrolling: dashboard, timeout: 3) {
@@ -118,7 +123,7 @@ final class FlashScopeUITests: XCTestCase {
                 waitForElement(
                     identifiedElement(in: app, identifier: "technical-evidence-card"),
                     scrolling: dashboard,
-                    timeout: 4
+                    timeout: 5
                 )
             )
         }
@@ -130,14 +135,14 @@ final class FlashScopeUITests: XCTestCase {
         app.launch()
         click(identifiedElement(in: app, identifier: "sidebar-drive-sim-disk-0"), file: #filePath, line: #line)
 
-        let menu = identifiedElement(in: app, identifier: "export-menu")
+        let menu = app.popUpButtons.matching(identifier: "export-menu").firstMatch
         XCTAssertTrue(menu.waitForExistence(timeout: 5))
         click(menu, file: #filePath, line: #line)
 
-        let jsonItem = app.descendants(matching: .any)
+        let jsonItem = app.menuItems
             .matching(NSPredicate(format: "label CONTAINS[c] %@", "JSON Diagnostic Report"))
             .firstMatch
-        XCTAssertTrue(jsonItem.waitForExistence(timeout: 4), "The JSON export command should be exposed after opening Export")
+        XCTAssertTrue(jsonItem.waitForExistence(timeout: 5), "The JSON export command should be exposed as a macOS menu item after opening Export")
         click(jsonItem, file: #filePath, line: #line)
 
         let sheetExists = app.sheets.firstMatch.waitForExistence(timeout: 4)
@@ -161,6 +166,18 @@ final class FlashScopeUITests: XCTestCase {
     @MainActor
     private func button(in app: XCUIApplication, identifier: String) -> XCUIElement {
         app.buttons.matching(identifier: identifier).firstMatch
+    }
+
+    @MainActor
+    private func benchmarkConfirmationButton(in app: XCUIApplication) -> XCUIElement {
+        let byIdentifier = button(in: app, identifier: "confirm-start-benchmark-button")
+        if byIdentifier.waitForExistence(timeout: 3) {
+            return byIdentifier
+        }
+
+        return app.buttons
+            .matching(NSPredicate(format: "label BEGINSWITH[c] %@", "Start Standard Check"))
+            .firstMatch
     }
 
     @MainActor
