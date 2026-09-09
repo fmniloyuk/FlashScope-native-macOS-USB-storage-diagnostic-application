@@ -11,9 +11,8 @@ final class FlashScopeUITests: XCTestCase {
         app.launchArguments = ["--ui-testing", "--simulate-empty"]
         app.launch()
 
-        let exists = app.otherElements["empty-state"].waitForExistence(timeout: 3)
-        XCTAssertTrue(exists)
-        XCTAssertTrue(app.buttons["empty-refresh-button"].exists)
+        XCTAssertTrue(identifiedElement(in: app, identifier: "empty-state").waitForExistence(timeout: 3))
+        XCTAssertTrue(button(in: app, identifier: "empty-refresh-button").waitForExistence(timeout: 2))
     }
 
     @MainActor
@@ -21,14 +20,20 @@ final class FlashScopeUITests: XCTestCase {
         let app = simulatedApp()
         app.launch()
 
+        let sidebar = identifiedElement(in: app, identifier: "sidebar-drive-list")
+        XCTAssertTrue(sidebar.waitForExistence(timeout: 3), "The removable-storage sidebar should be exposed to accessibility")
+
         for index in 0...9 {
-            let drive = app.descendants(matching: .any)["sidebar-drive-sim-disk-\(index)"]
+            let drive = identifiedElement(in: app, identifier: "sidebar-drive-sim-disk-\(index)")
             XCTAssertTrue(drive.waitForExistence(timeout: 3), "Simulation fixture \(index) should appear in the premium sidebar")
-            drive.click()
-            XCTAssertTrue(app.otherElements["overview-card"].waitForExistence(timeout: 3), "Simulation fixture \(index) should render the verdict-first overview")
+            click(drive, scrolling: sidebar, file: #filePath, line: #line)
+            XCTAssertTrue(
+                identifiedElement(in: app, identifier: "overview-card").waitForExistence(timeout: 3),
+                "Simulation fixture \(index) should render the verdict-first overview"
+            )
         }
 
-        XCTAssertTrue(app.descendants(matching: .any)["simulation-mode-banner"].exists)
+        XCTAssertTrue(identifiedElement(in: app, identifier: "simulation-mode-banner").exists)
     }
 
     @MainActor
@@ -36,34 +41,30 @@ final class FlashScopeUITests: XCTestCase {
         let app = simulatedApp()
         app.launch()
 
-        let firstDrive = app.descendants(matching: .any)["sidebar-drive-sim-disk-0"]
-        let driveExists = firstDrive.waitForExistence(timeout: 3)
-        XCTAssertTrue(driveExists)
-        firstDrive.click()
+        let firstDrive = identifiedElement(in: app, identifier: "sidebar-drive-sim-disk-0")
+        XCTAssertTrue(firstDrive.waitForExistence(timeout: 3))
+        click(firstDrive, file: #filePath, line: #line)
 
-        let overviewExists = app.otherElements["overview-card"].waitForExistence(timeout: 3)
-        XCTAssertTrue(overviewExists)
-        app.buttons["health-check-button"].click()
+        XCTAssertTrue(identifiedElement(in: app, identifier: "overview-card").waitForExistence(timeout: 3))
+        click(button(in: app, identifier: "health-check-button"), file: #filePath, line: #line)
 
-        let sheetExists = app.otherElements["health-check-sheet"].waitForExistence(timeout: 2)
-        let confirmExists = app.buttons["confirm-start-benchmark-button"].exists
-        XCTAssertTrue(sheetExists)
-        XCTAssertTrue(confirmExists)
+        XCTAssertTrue(identifiedElement(in: app, identifier: "health-check-sheet").waitForExistence(timeout: 2))
+        XCTAssertTrue(button(in: app, identifier: "confirm-start-benchmark-button").waitForExistence(timeout: 2))
     }
 
     @MainActor
     func testProgressAndCancellation() throws {
         let app = simulatedApp()
         app.launch()
-        app.descendants(matching: .any)["sidebar-drive-sim-disk-0"].click()
-        app.buttons["health-check-button"].click()
-        app.buttons["confirm-start-benchmark-button"].click()
 
-        let progressExists = app.descendants(matching: .any)["benchmark-progress"].waitForExistence(timeout: 2)
-        XCTAssertTrue(progressExists)
+        click(identifiedElement(in: app, identifier: "sidebar-drive-sim-disk-0"), file: #filePath, line: #line)
+        click(button(in: app, identifier: "health-check-button"), file: #filePath, line: #line)
+        click(button(in: app, identifier: "confirm-start-benchmark-button"), file: #filePath, line: #line)
 
-        let cancelButton = app.buttons["cancel-benchmark-button"]
-        if cancelButton.exists {
+        XCTAssertTrue(identifiedElement(in: app, identifier: "benchmark-progress").waitForExistence(timeout: 2))
+
+        let cancelButton = button(in: app, identifier: "cancel-benchmark-button")
+        if cancelButton.exists && cancelButton.isHittable {
             cancelButton.click()
         }
     }
@@ -73,41 +74,37 @@ final class FlashScopeUITests: XCTestCase {
         let app = simulatedApp()
         app.launch()
 
-        let removed = app.descendants(matching: .any)["sidebar-drive-sim-disk-9"]
-        let removedExists = removed.waitForExistence(timeout: 3)
-        XCTAssertTrue(removedExists)
-        removed.click()
-        app.buttons["health-check-button"].click()
-        app.buttons["confirm-start-benchmark-button"].click()
+        let sidebar = identifiedElement(in: app, identifier: "sidebar-drive-list")
+        XCTAssertTrue(sidebar.waitForExistence(timeout: 3))
 
-        let alertExists = app.alerts.firstMatch.waitForExistence(timeout: 3)
-        XCTAssertTrue(alertExists)
+        let removed = identifiedElement(in: app, identifier: "sidebar-drive-sim-disk-9")
+        XCTAssertTrue(removed.waitForExistence(timeout: 3))
+        click(removed, scrolling: sidebar, file: #filePath, line: #line)
+        click(button(in: app, identifier: "health-check-button"), file: #filePath, line: #line)
+        click(button(in: app, identifier: "confirm-start-benchmark-button"), file: #filePath, line: #line)
+
+        XCTAssertTrue(app.alerts.firstMatch.waitForExistence(timeout: 3))
     }
 
     @MainActor
     func testFindingsAndDiagnosticViews() throws {
         let app = simulatedApp()
         app.launch()
-        app.descendants(matching: .any)["sidebar-drive-sim-disk-4"].click()
+        click(identifiedElement(in: app, identifier: "sidebar-drive-sim-disk-4"), file: #filePath, line: #line)
 
-        let findingsExists = app.otherElements["findings-card"].waitForExistence(timeout: 3)
-        XCTAssertTrue(findingsExists)
+        XCTAssertTrue(identifiedElement(in: app, identifier: "findings-card").waitForExistence(timeout: 3))
 
-        let diagnoseButton = app.buttons["Diagnose"]
-        let diagnoseExists = diagnoseButton.waitForExistence(timeout: 2)
-        XCTAssertTrue(diagnoseExists)
-        diagnoseButton.click()
+        let diagnoseButton = app.buttons.matching(NSPredicate(format: "label == %@", "Diagnose")).firstMatch
+        XCTAssertTrue(diagnoseButton.waitForExistence(timeout: 2))
+        click(diagnoseButton, file: #filePath, line: #line)
 
-        let connectionExists = app.otherElements["connection-card"].waitForExistence(timeout: 2)
-        let filesystemExists = app.otherElements["filesystem-card"].exists
-        XCTAssertTrue(connectionExists)
-        XCTAssertTrue(filesystemExists)
+        XCTAssertTrue(identifiedElement(in: app, identifier: "connection-card").waitForExistence(timeout: 2))
+        XCTAssertTrue(identifiedElement(in: app, identifier: "filesystem-card").waitForExistence(timeout: 2))
 
-        let technicalButton = app.buttons["Technical"]
+        let technicalButton = app.buttons.matching(NSPredicate(format: "label == %@", "Technical")).firstMatch
         if technicalButton.exists {
-            technicalButton.click()
-            let technicalExists = app.otherElements["technical-evidence-card"].waitForExistence(timeout: 2)
-            XCTAssertTrue(technicalExists)
+            click(technicalButton, file: #filePath, line: #line)
+            XCTAssertTrue(identifiedElement(in: app, identifier: "technical-evidence-card").waitForExistence(timeout: 2))
         }
     }
 
@@ -115,13 +112,15 @@ final class FlashScopeUITests: XCTestCase {
     func testExportFlowOpensSavePanel() throws {
         let app = simulatedApp()
         app.launch()
-        app.descendants(matching: .any)["sidebar-drive-sim-disk-0"].click()
+        click(identifiedElement(in: app, identifier: "sidebar-drive-sim-disk-0"), file: #filePath, line: #line)
 
-        let menu = app.buttons["export-menu"]
-        let menuExists = menu.waitForExistence(timeout: 3)
-        XCTAssertTrue(menuExists)
-        menu.click()
-        app.menuItems["JSON Diagnostic Report…"].click()
+        let menu = identifiedElement(in: app, identifier: "export-menu")
+        XCTAssertTrue(menu.waitForExistence(timeout: 3))
+        click(menu, file: #filePath, line: #line)
+
+        let jsonItem = app.menuItems.matching(NSPredicate(format: "label == %@", "JSON Diagnostic Report…")).firstMatch
+        XCTAssertTrue(jsonItem.waitForExistence(timeout: 2))
+        click(jsonItem, file: #filePath, line: #line)
 
         let sheetExists = app.sheets.firstMatch.waitForExistence(timeout: 2)
         let dialogExists = app.dialogs.firstMatch.waitForExistence(timeout: 2)
@@ -134,5 +133,35 @@ final class FlashScopeUITests: XCTestCase {
         let app = XCUIApplication()
         app.launchArguments = ["--ui-testing", "--simulate"]
         return app
+    }
+
+    @MainActor
+    private func identifiedElement(in app: XCUIApplication, identifier: String) -> XCUIElement {
+        app.descendants(matching: .any).matching(identifier: identifier).firstMatch
+    }
+
+    @MainActor
+    private func button(in app: XCUIApplication, identifier: String) -> XCUIElement {
+        app.buttons.matching(identifier: identifier).firstMatch
+    }
+
+    @MainActor
+    private func click(
+        _ element: XCUIElement,
+        scrolling container: XCUIElement? = nil,
+        timeout: TimeInterval = 3,
+        file: StaticString,
+        line: UInt
+    ) {
+        XCTAssertTrue(element.waitForExistence(timeout: timeout), "Expected UI element to exist before clicking", file: file, line: line)
+
+        if !element.isHittable, let container, container.exists {
+            for _ in 0..<6 where !element.isHittable {
+                container.scroll(byDeltaX: 0, deltaY: -220)
+            }
+        }
+
+        XCTAssertTrue(element.isHittable, "Expected UI element to be hittable before clicking", file: file, line: line)
+        element.click()
     }
 }
