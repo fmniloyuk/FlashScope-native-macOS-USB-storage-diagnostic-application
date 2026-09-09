@@ -85,7 +85,7 @@ struct HealthCheckSheet: View {
                 footer
             }
         }
-        .frame(minWidth: 720, idealWidth: 800, minHeight: 720)
+        .frame(minWidth: 720, idealWidth: 800, minHeight: 520, idealHeight: 640)
         .accessibilityIdentifier("health-check-sheet")
     }
 
