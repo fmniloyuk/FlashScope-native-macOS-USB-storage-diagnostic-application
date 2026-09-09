@@ -8,20 +8,28 @@ struct ContentView: View {
     @State private var showVerificationConfirmation = false
 
     var body: some View {
-        NavigationSplitView {
-            SidebarView(model: model)
-                .navigationSplitViewColumnWidth(min: 230, ideal: 270, max: 340)
-        } detail: {
-            if model.drives.isEmpty && !model.isRefreshing {
-                emptyState
-            } else if model.selectedDrive != nil {
-                DashboardView(
-                    model: model,
-                    verifyFilesystem: { showVerificationConfirmation = true },
-                    retestAction: { showHealthCheck = true }
-                )
-            } else {
-                ContentUnavailableView("Select a USB drive", systemImage: "externaldrive", description: Text("Choose a removable USB storage device from the sidebar."))
+        ZStack {
+            FlashScopeBackground()
+
+            NavigationSplitView {
+                SidebarView(model: model)
+                    .navigationSplitViewColumnWidth(min: 238, ideal: 270, max: 330)
+            } detail: {
+                ZStack {
+                    FlashScopeBackground()
+
+                    if model.drives.isEmpty && !model.isRefreshing {
+                        emptyState
+                    } else if model.selectedDrive != nil {
+                        DashboardView(
+                            model: model,
+                            verifyFilesystem: { showVerificationConfirmation = true },
+                            retestAction: { showHealthCheck = true }
+                        )
+                    } else {
+                        selectDriveState
+                    }
+                }
             }
         }
         .toolbar { toolbar }
@@ -48,15 +56,80 @@ struct ContentView: View {
     }
 
     private var emptyState: some View {
-        ContentUnavailableView {
-            Label("No removable USB drives", systemImage: "externaldrive.badge.plus")
-        } description: {
-            Text("Connect a USB flash drive. FlashScope will inspect it without modifying data until you explicitly start a diagnostic check.")
-        } actions: {
-            Button("Refresh") { Task { await model.refresh() } }
-                .accessibilityIdentifier("empty-refresh-button")
+        VStack(spacing: 22) {
+            ZStack {
+                Circle()
+                    .fill(
+                        RadialGradient(
+                            colors: [FlashScopeTheme.accent.opacity(0.22), FlashScopeTheme.accentBlue.opacity(0.06), .clear],
+                            center: .center,
+                            startRadius: 8,
+                            endRadius: 88
+                        )
+                    )
+                    .frame(width: 176, height: 176)
+
+                RoundedRectangle(cornerRadius: 27, style: .continuous)
+                    .fill(.ultraThinMaterial)
+                    .frame(width: 116, height: 116)
+                    .overlay {
+                        RoundedRectangle(cornerRadius: 27, style: .continuous)
+                            .stroke(Color.white.opacity(0.12), lineWidth: 1)
+                    }
+
+                Image(systemName: "externaldrive.fill.badge.plus")
+                    .font(.system(size: 48, weight: .medium))
+                    .symbolRenderingMode(.hierarchical)
+                    .foregroundStyle(FlashScopeTheme.accent)
+            }
+            .accessibilityHidden(true)
+
+            VStack(spacing: 8) {
+                Text("Connect a USB drive")
+                    .font(FlashScopeTheme.pageTitle)
+                    .multilineTextAlignment(.center)
+                Text("FlashScope safely analyzes its connection, performance, filesystem, integrity, and available health signals.")
+                    .font(FlashScopeTheme.body)
+                    .foregroundStyle(FlashScopeTheme.foregroundSecondary)
+                    .multilineTextAlignment(.center)
+                    .frame(maxWidth: 470)
+            }
+
+            Button {
+                Task { await model.refresh() }
+            } label: {
+                Label(model.isRefreshing ? "Refreshing…" : "Refresh", systemImage: "arrow.clockwise")
+            }
+            .buttonStyle(FlashScopePrimaryButtonStyle())
+            .disabled(model.isRefreshing)
+            .accessibilityIdentifier("empty-refresh-button")
+
+            Label("FlashScope never formats or repairs drives automatically", systemImage: "lock.shield.fill")
+                .font(FlashScopeTheme.supporting)
+                .foregroundStyle(FlashScopeTheme.foregroundSecondary)
         }
+        .padding(44)
+        .frame(maxWidth: 680)
+        .accessibilityElement(children: .contain)
         .accessibilityIdentifier("empty-state")
+    }
+
+    private var selectDriveState: some View {
+        VStack(spacing: 14) {
+            Image(systemName: "externaldrive.badge.questionmark")
+                .font(.system(size: 42))
+                .foregroundStyle(FlashScopeTheme.accent)
+                .accessibilityHidden(true)
+            Text("Select a USB drive")
+                .font(.title2.weight(.semibold))
+            Text("Choose a removable storage device from the sidebar to see its diagnostic overview.")
+                .font(FlashScopeTheme.body)
+                .foregroundStyle(FlashScopeTheme.foregroundSecondary)
+                .multilineTextAlignment(.center)
+        }
+        .padding(32)
+        .flashScopeSurface(emphasized: true)
+        .padding(32)
     }
 
     @ToolbarContentBuilder
