@@ -91,7 +91,9 @@ final class FlashScopeUITests: XCTestCase {
         XCTAssertTrue(identifiedElement(in: app, identifier: "health-check-sheet").waitForExistence(timeout: 5))
         click(benchmarkConfirmationButton(in: app), timeout: 5, file: #filePath, line: #line)
 
-        XCTAssertTrue(app.alerts.firstMatch.waitForExistence(timeout: 5))
+        let alertExists = app.alerts.firstMatch.waitForExistence(timeout: 5)
+        let dialogExists = app.dialogs.firstMatch.waitForExistence(timeout: alertExists ? 0 : 2)
+        XCTAssertTrue(alertExists || dialogExists, "The simulated drive-removal storage error should be presented as a macOS alert or dialog")
     }
 
     @MainActor
